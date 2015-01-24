@@ -1,0 +1,574 @@
+
+#ifndef experimental_optional
+#define experimental_optional
+
+#include <__config>
+
+#include <functional>
+#include <stdexcept>
+
+_LIBCPP_BEGIN_NAMESPACE_STD
+
+inline namespace experimental {
+class _LIBCPP_EXCEPTION_ABI bad_optional_access : public std::logic_error {
+public:
+  bad_optional_access() : std::logic_error("bad optional access") {}
+  virtual ~bad_optional_access() _NOEXCEPT;
+};
+
+#if _LIBCPP_STD_VER > 11
+
+#include <__debug>
+#include <__functional_base>
+#include <__undef_min_max>
+
+#include <initializer_list>
+#include <new>
+#include <type_traits>
+
+struct in_place_t {};
+constexpr in_place_t in_place{};
+
+struct nullopt_t {
+  explicit constexpr nullopt_t(int) noexcept {}
+};
+constexpr nullopt_t nullopt{ 0 };
+
+template <class _Tp, bool = is_trivially_destructible<_Tp>::value>
+class __optional_storage {
+protected:
+  typedef _Tp value_type;
+
+  union {
+    char __null_state_;
+    value_type __val_;
+  };
+  bool __engaged_ = false;
+
+  _LIBCPP_INLINE_VISIBILITY
+  constexpr __optional_storage() noexcept : __null_state_('\0') {}
+
+  _LIBCPP_INLINE_VISIBILITY
+  __optional_storage(const __optional_storage &__s)
+      : __engaged_(__s.__engaged_) {
+    if (__engaged_)
+      ::new (_VSTD::addressof(__val_)) value_type(__s.__val_);
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  __optional_storage(const __optional_storage &&__s) noexcept(
+      is_nothrow_move_constructible<value_type>::value)
+      : __engaged_(__s.__engaged_) {
+    if (__engaged_)
+      ::new (_VSTD::addressof(__val_)) value_type(_VSTD::move(__s.__val_));
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  __optional_storage(const value_type &__v) : __val_(__v), __engaged_(true) {}
+
+  _LIBCPP_INLINE_VISIBILITY
+  __optional_storage(const value_type &&__v)
+      : __val_(_VSTD::move(__v)), __engaged_(true) {}
+
+  template <typename... _Args>
+  _LIBCPP_INLINE_VISIBILITY constexpr explicit __optional_storage(
+      in_place_t, _Args &&... __args)
+      : __val_(_VSTD::forward(__args)...), __engaged_(true) {}
+
+  _LIBCPP_INLINE_VISIBILITY
+  ~__optional_storage() {
+    if (__engaged_)
+      __val_.~value_type();
+  }
+};
+
+template <typename _Tp>
+class __optional_storage<_Tp, true> {
+protected:
+  typedef _Tp value_type;
+
+  union {
+    char __null_state_;
+    value_type __val_;
+  };
+  bool __engaged_ = false;
+
+  _LIBCPP_INLINE_VISIBILITY
+  constexpr __optional_storage() noexcept : __null_state_('\0') {}
+
+  _LIBCPP_INLINE_VISIBILITY
+  __optional_storage(const __optional_storage &__s)
+      : __engaged_(__s.__engaged_) {
+    if (__engaged_)
+      ::new (_VSTD::addressof(__val_)) value_type(__s.__val_);
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  __optional_storage(__optional_storage &&__s) noexcept(
+      is_nothrow_move_constructible<value_type>::value)
+      : __engaged_(__s.__engaged_) {
+    if (__engaged_)
+      ::new (_VSTD::addressof(__val_)) value_type(_VSTD::move(__s.__val_));
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  constexpr __optional_storage(const value_type &__v)
+      : __val_(__v), __engaged_(true) {}
+
+  _LIBCPP_INLINE_VISIBILITY
+  constexpr __optional_storage(const value_type &&__v)
+      : __val_(_VSTD::move(__v)), __engaged_(true) {}
+
+  template <typename... _Args>
+  _LIBCPP_INLINE_VISIBILITY constexpr explicit __optional_storage(
+      in_place_t, _Args &&... __args)
+      : __val_(_VSTD::forward<_Args>(__args)...), __engaged_(true) {}
+};
+
+template <typename _Tp>
+class optional : private __optional_storage<_Tp> {
+  typedef __optional_storage<_Tp> __base;
+
+public:
+  typedef _Tp value_type;
+
+  static_assert(
+      !is_reference<value_type>::value,
+      "instantiation of optional with a reference-type is ill-formed");
+  static_assert(
+      !is_same<typename remove_cv<value_type>::type, in_place_t>::value,
+      "instantiation of optional with an in_place_t type is ill-formed");
+  static_assert(
+      !is_same<typename remove_cv<value_type>::type, nullopt_t>::value,
+      "instantiation of optional with a nullopt_t type is ill-formed");
+  static_assert(
+      is_object<value_type>::value,
+      "instantiation of optional with a non-object is undefined behaviour");
+  #if 0
+  static_assert(is_nothrow_destructible<value_type>::value_type,
+                "instantiation of optional with an object type that is not "
+                "noexcept destructible is undefined behaviour");
+                #endif
+
+  _LIBCPP_INLINE_VISIBILITY constexpr optional() noexcept {}
+  _LIBCPP_INLINE_VISIBILITY constexpr optional(nullopt_t) noexcept {}
+  _LIBCPP_INLINE_VISIBILITY constexpr optional(const value_type &__v)
+      : __base(__v) {}
+  _LIBCPP_INLINE_VISIBILITY optional(const optional &) = default;
+  _LIBCPP_INLINE_VISIBILITY optional(optional &&) = default;
+
+  _LIBCPP_INLINE_VISIBILITY ~optional() = default;
+
+  template <typename... _Args, typename = typename enable_if<is_constructible<
+                                   value_type, _Args...>::value>::type>
+  _LIBCPP_INLINE_VISIBILITY constexpr explicit optional(in_place_t,
+                                                        _Args &&... __args)
+      : __base(in_place, _VSTD::forward<_Args>(__args)...) {}
+
+  template <typename _Up, typename... _Args,
+            typename = typename enable_if<is_constructible<
+                value_type, initializer_list<_Up> &, _Args...>::value>::type>
+  _LIBCPP_INLINE_VISIBILITY constexpr explicit optional(
+      in_place_t, initializer_list<_Up> __il, _Args &&... __args)
+      : __base(in_place, __il, _VSTD::forward<_Args>(__args)...) {}
+
+  _LIBCPP_INLINE_VISIBILITY
+  optional &operator=(nullopt_t) noexcept {
+    if (this->__engaged_) {
+      this->__val_.~value_type();
+      this->__engaged_ = false;
+    }
+    return *this;
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  optional &operator=(const optional &__opt) {
+    if (this->__engaged_ == __opt.__engaged_) {
+      if (this->__engaged_)
+        this->__val_ = __opt.__val_;
+    } else {
+      if (this->__engaged_)
+        this->__val_.~value_type();
+      else
+        ::new (_VSTD::addressof(this->__val_)) value_type(__opt.__val_);
+      this->__engaged_ = __opt.__engaged_;
+    }
+    return *this;
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  optional &operator=(const optional &&__opt) noexcept(
+      is_nothrow_move_assignable<value_type>::value
+          &&is_nothrow_move_constructible<value_type>::value) {
+    if (this->__engaged_ == __opt.__engaged_) {
+      if (this->__engaged_)
+        this->__val_ = _VSTD::move(__opt.__val_);
+    } else {
+      if (this->__engaged_)
+        this->__val_.~value_type();
+      else
+        ::new (_VSTD::addressof(this->__val_))
+            value_type(_VSTD::move(__opt.__val_));
+      this->__engaged_ = __opt.__engaged_;
+    }
+    return *this;
+  }
+
+  template <typename _Up,
+            typename = typename enable_if<
+                is_same<typename remove_reference<_Up>::type, value_type>::value &&
+                is_constructible<value_type, _Up>::value &&
+                is_assignable<value_type, _Up>::value>::type>
+  _LIBCPP_INLINE_VISIBILITY optional &operator=(_Up &&__v) {
+    if (this->__engaged_) {
+      this->__val_ = _VSTD::forward<_Up>(__v);
+    } else {
+      ::new (_VSTD::addressof(this->__val_))
+          value_type(_VSTD::forward<_Up>(__v));
+      this->__engaged_ = true;
+    }
+    return *this;
+  }
+
+  template <typename... _Args, typename = typename enable_if<is_constructible<
+                                   value_type, _Args...>::value>::type>
+  _LIBCPP_INLINE_VISIBILITY void emplace(_Args &&... __args) {
+    *this = nullopt;
+    ::new (_VSTD::addressof(this->__val_))
+        value_type(_VSTD::forward<_Args>(__args)...);
+    this->__engaged_ = true;
+  }
+
+  template <typename _Up, typename... _Args,
+            typename = typename enable_if<is_constructible<
+                value_type, initializer_list<_Up> &, _Args...>::value>::type>
+  _LIBCPP_INLINE_VISIBILITY void
+  emplace(initializer_list<_Up> __il, _Args &&... __args) {
+    *this = nullopt;
+    ::new (_VSTD::addressof(this->__val_))
+        value_type(__il, _VSTD::forward<_Args>(__args)...);
+    this->__engaged_ = true;
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  void swap(optional &__opt) noexcept(
+      is_nothrow_move_constructible<value_type>::value
+          &&__is_nothrow_swappable<value_type>::value) {
+    using _VSTD::swap;
+    if (this->__engaged_ == __opt.__engaged_) {
+      if (this->__engaged_)
+        swap(this->__val_, __opt.__val_);
+    } else {
+      if (this->__engaged_) {
+        ::new (_VSTD::addressof(__opt.__val_))
+            value_type(_VSTD::move(this->__val_));
+        this->__val_.~value_type();
+      } else {
+        ::new (_VSTD::addressof(this->__val_))
+            value_type(_VSTD::move(__opt.__val_));
+        __opt.__val_.~value_type();
+      }
+      swap(this->__engaged_, __opt.__engaged_);
+    }
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  constexpr value_type const operator->() const {
+    _LIBCPP_ASSERT(this->__engaged_,
+                   "optional operator-> called for disengaged value");
+    return __operator_arrow(__has_operator_addressof<value_type>{});
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  value_type *operator->() {
+    _LIBCPP_ASSERT(this->__engaged_,
+                   "optional operator-> called for disengaged value");
+    return _VSTD::addressof(this->__val_);
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  constexpr const value_type &operator*() const {
+    _LIBCPP_ASSERT(this->__engaged_,
+                   "optional operator* called for disengaged value");
+    return this->__val_;
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  value_type &operator*() {
+    _LIBCPP_ASSERT(this->__engaged_,
+                   "optional operator* called for disengaged value");
+    return this->__val_;
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  constexpr explicit operator bool() const noexcept {
+    return this->__engaged_;
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  constexpr value_type const &value() const {
+#if defined(_LIBCPP_NO_EXCEPTIONS)
+    assert(this->__engaged_ && "bad optional access");
+#else
+    if (!this->__engaged_)
+      throw bad_optional_access();
+#endif
+    return this->__val_;
+  }
+
+  _LIBCPP_INLINE_VISIBILITY
+  value_type &value() {
+#if defined(_LIBCPP_NO_EXCEPTIONS)
+    assert(this->__engaged_ && "bad optional access");
+#else
+    if (!this->__engaged_)
+      throw bad_optional_access();
+#endif
+    return this->__val_;
+  }
+
+  template <typename _Up>
+  _LIBCPP_INLINE_VISIBILITY constexpr value_type value_or(_Up &&__v) const & {
+    static_assert(is_copy_constructible<value_type>::value,
+                  "optional<T>::value_or: T must be copy constructible");
+    static_assert(is_convertible<_Up, value_type>::value,
+                  "optional<T>::value_or: U must be convertible to T");
+    return this->__engaged_ ? this->__val_
+                            : static_cast<value_type>(_VSTD::forward<_Up>(__v));
+  }
+
+  template <typename _Up>
+  _LIBCPP_INLINE_VISIBILITY value_type value_or(_Up &&__v) && {
+    static_assert(is_move_constructible<value_type>::value,
+                  "optional<T>::value_or: T must be move constructible");
+    static_assert(is_convertible<_Up, value_type>::value,
+                  "optional<T>::value_or: U must be convertible to T");
+    return this->__engaged_ ? this->__val_
+                            : static_cast<value_type>(_VSTD::forward<_Up>(__v));
+  }
+
+private:
+  _LIBCPP_INLINE_VISIBILITY value_type const *
+      __operator_arrow(true_type) const {
+    return _VSTD::addressof(this->__val_);
+  }
+
+  _LIBCPP_INLINE_VISIBILITY constexpr value_type const *
+      __operator_arrow(false_type) const {
+    return &this->__val_;
+  }
+};
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator==(const optional<_Tp> &__lhs, const optional<_Tp> &__rhs) {
+  if (static_cast<bool>(__lhs) != static_cast<bool>(__rhs))
+    return false;
+  if (!static_cast<bool>(__lhs))
+    return true;
+  return *__lhs == *__rhs;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator!=(const optional<_Tp> &__lhs, const optional<_Tp> &__rhs) {
+  return !(__lhs == __rhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator<(const optional<_Tp> &__lhs, const optional<_Tp> &__rhs) {
+  if (!static_cast<bool>(__lhs))
+    return false;
+  if (!static_cast<bool>(__rhs))
+    return true;
+  return *__lhs < *__rhs;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator>(const optional<_Tp> &__lhs, const optional<_Tp> &__rhs) {
+  return __rhs > __lhs;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator<=(const optional<_Tp> &__lhs, const optional<_Tp> &__rhs) {
+  return !(__rhs < __lhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator>=(const optional<_Tp> &__lhs, const optional<_Tp> &__rhs) {
+  return !(__lhs < __rhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator==(const optional<_Tp> &__lhs, nullopt_t) noexcept {
+  return !static_cast<bool>(__lhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator==(nullopt_t, const optional<_Tp> &__rhs) noexcept {
+  return !static_cast<bool>(__rhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator!=(const optional<_Tp> &__lhs, nullopt_t) noexcept {
+  return static_cast<bool>(__lhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator!=(nullopt_t, const optional<_Tp> &__rhs) noexcept {
+  return static_cast<bool>(__rhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator<(const optional<_Tp> &, nullopt_t) noexcept {
+  return false;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator<(nullopt_t, const optional<_Tp> &__rhs) noexcept {
+  return static_cast<bool>(__rhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator<=(const optional<_Tp> &__lhs, nullopt_t) noexcept {
+  return !static_cast<bool>(__lhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator<=(nullopt_t, const optional<_Tp> &) noexcept {
+  return true;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator>(const optional<_Tp> &__lhs, nullopt_t) noexcept {
+  return static_cast<bool>(__lhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator>(nullopt_t, const optional<_Tp> &) noexcept {
+  return false;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator>=(const optional<_Tp> &, nullopt_t) noexcept {
+  return true;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator>=(nullopt_t, const optional<_Tp> &__rhs) noexcept {
+  return !static_cast<bool>(__rhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator==(const optional<_Tp> &__lhs, const _Tp &__rhs) {
+  return static_cast<bool>(__lhs) ? *__lhs == __rhs : false;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator==(const _Tp &__lhs, const optional<_Tp> &__rhs) {
+  return static_cast<bool>(__rhs) ? *__rhs == __lhs : false;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator!=(const optional<_Tp> &__lhs, const _Tp &__rhs) {
+  return static_cast<bool>(__lhs) ? !(*__lhs == __rhs) : true;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator<(const optional<_Tp> &__lhs, const _Tp &__rhs) {
+  return static_cast<bool>(__lhs) ? less<_Tp>{}(*__lhs, __rhs) : true;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator<(const _Tp &__lhs, const optional<_Tp> &__rhs) {
+  return static_cast<bool>(__rhs) ? less<_Tp>{}(__lhs, *__rhs) : true;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator<=(const optional<_Tp> &__lhs, const _Tp &__rhs) {
+  return !(__lhs > __rhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator<=(const _Tp &__lhs, const optional<_Tp> &__rhs) {
+  return !(__lhs > __rhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator>(const optional<_Tp> &__lhs, const _Tp &__rhs) {
+  return static_cast<bool>(__lhs) ? __rhs < __lhs : false;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator>(const _Tp &__lhs, const optional<_Tp> &__rhs) {
+  return static_cast<bool>(__rhs) ? __rhs < __lhs : true;
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator>=(const optional<_Tp> &__lhs, const _Tp &__rhs) {
+  return !(__lhs < __rhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr bool
+operator>=(const _Tp &__lhs, const optional<_Tp> &__rhs) {
+  return !(__lhs < __rhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY void
+swap(optional<_Tp> &__lhs,
+     optional<_Tp> &__rhs) noexcept(noexcept(__lhs.swap(__rhs))) {
+  __lhs.swap(__rhs);
+}
+
+template <typename _Tp>
+inline _LIBCPP_INLINE_VISIBILITY constexpr optional<typename decay<_Tp>::type>
+make_optional(_Tp &&__v) {
+  return optional<typename decay<_Tp>::type>(_VSTD::forward<_Tp>(__v));
+}
+
+#endif
+}
+
+template <typename _Tp>
+struct _LIBCPP_TYPE_VIS_ONLY hash<optional<_Tp>> {
+  typedef optional<_Tp> argument_type;
+  typedef size_t result_type;
+
+  _LIBCPP_INLINE_VISIBILITY result_type
+  operator()(const argument_type &__opt) const _NOEXCEPT {
+    return static_cast<bool>(__opt) ? hash<_Tp>()(*__opt) : 0;
+  }
+};
+
+_LIBCPP_END_NAMESPACE_STD
+
+#endif
+

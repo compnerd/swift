@@ -1,0 +1,681 @@
+
+#ifndef experimental_string_view
+#define experimental_string_view
+
+#include <__config>
+
+#include <algorithm>
+#include <cassert>
+#include <iterator>
+#include <iomanip>
+#include <ostream>
+#include <string>
+
+_LIBCPP_BEGIN_NAMESPACE_STD
+
+inline namespace experimental {
+template <class _CharT, class _Traits = _VSTD::char_traits<_CharT>>
+class basic_string_view {
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  static size_t __rfind(const _CharT *__p, size_t __sz, const _CharT *__s,
+                        size_t __pos, size_t __n) _NOEXCEPT {
+    if (__pos > __sz || __sz - __pos < __n)
+      return npos;
+    if (__n == 0)
+      return __pos;
+    const _CharT *__r =
+      _VSTD::__search(__p + __pos, __p + __sz, __s, __s + __n, _Traits::eq,
+                      random_access_iterator_tag(),
+                      random_access_iterator_tag());
+    if (__r == __p + __sz)
+      return npos;
+    return static_cast<size_t>(__r - __p);
+  }
+
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  static size_t __find(const _CharT *__p, size_t __sz, const _CharT *__s,
+                       size_t __pos, size_t __n) _NOEXCEPT {
+    if (__pos > __sz || __sz - __pos < __n)
+      return npos;
+    if (__n == 0)
+      return __pos;
+    const _CharT *__r =
+      _VSTD::__search(__p + __pos, __p + __sz, __s, __s + __n, _Traits::eq,
+                      random_access_iterator_tag(),
+                      random_access_iterator_tag());
+    if (__r == __p + __sz)
+      return npos;
+    return static_cast<size_t>(__r - __p);
+  }
+
+public:
+  typedef _Traits                                 traits_type;
+  typedef _CharT                                  value_type;
+  typedef const _CharT *                          pointer;
+  typedef const _CharT *                          const_pointer;
+  typedef const _CharT &                          reference;
+  typedef const _CharT &                          const_reference;
+  typedef const_pointer                           const_iterator;
+  typedef const_iterator                          iterator;
+  typedef _VSTD::reverse_iterator<const_iterator> const_reverse_iterator;
+  typedef const_reverse_iterator                  reverse_iterator;
+  typedef size_t                                  size_type;
+  typedef ptrdiff_t                               difference_type;
+
+  static const _LIBCPP_CONSTEXPR size_type npos = -1;
+
+  // [string.view.cons], construct/copy
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  basic_string_view() _NOEXCEPT : __data_(nullptr), __size_(0) {}
+
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  basic_string_view(const basic_string_view &) _NOEXCEPT = default;
+
+  _LIBCPP_INLINE_VISIBILITY
+  basic_string_view & operator=(const basic_string_view &) _NOEXCEPT = default;
+
+  template <class _Allocator>
+  _LIBCPP_INLINE_VISIBILITY
+  basic_string_view(const basic_string<value_type, traits_type,
+                                       _Allocator> &__str) _NOEXCEPT
+      : __data_(__str.data()), __size_(__str.size()) {}
+
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  basic_string_view(const_pointer __s, size_type __len)
+      : __data_(__s), __size_(__len) {
+#if __cplusplus >= 201305L
+    _LIBCPP_ASSERT(__len == 0 || __s, __PRETTY_FUNCTION__ ": received nullptr");
+#endif
+  }
+
+  _LIBCPP_CONSTEXPR basic_string_view(const_pointer __s)
+      : __data_(__s), __size_(traits_type::length(__s)) {}
+
+  // [string.view.iterators], iterators
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  const_iterator begin() const _NOEXCEPT { return cbegin(); }
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  const_iterator end() const _NOEXCEPT { return cend(); }
+
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  const_iterator cbegin() const _NOEXCEPT { return __data_; }
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  const_iterator cend() const _NOEXCEPT { return __data_ + __size_; }
+
+  _LIBCPP_INLINE_VISIBILITY const_reverse_iterator rbegin() const _NOEXCEPT {
+    return const_reverse_iterator(cend());
+  }
+  _LIBCPP_INLINE_VISIBILITY const_reverse_iterator rend() const _NOEXCEPT {
+    return const_reverse_iterator(cbegin());
+  }
+
+  _LIBCPP_INLINE_VISIBILITY const_reverse_iterator crbegin() const _NOEXCEPT {
+    return const_reverse_iterator(cend());
+  }
+  _LIBCPP_INLINE_VISIBILITY const_reverse_iterator crend() const _NOEXCEPT {
+    return const_reverse_iterator(cbegin());
+  }
+
+  // [string.view.capacity], capacity
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  size_type size() const _NOEXCEPT {
+    return __size_;
+  }
+
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  size_type length() const _NOEXCEPT {
+    return __size_;
+  }
+
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  size_type max_size() const _NOEXCEPT {
+    return _VSTD::numeric_limits<size_type>::max();
+  }
+
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  bool empty() const _NOEXCEPT {
+    return __size_ == 0;
+  }
+
+  // [string.view.access], element access
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  const_reference operator[](size_type __pos) const {
+    return __data_[__pos];
+  }
+
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  const_reference at(size_type __pos) const {
+#if defined(_LIBCPP_NO_EXCEPTIONS)
+#if __cplusplus >= 201305l
+    assert(__pos < size() && "out of range");
+#endif
+    return __data_[__pos];
+#else
+    return __pos >= size() ? throw out_of_range(__PRETTY_FUNCTION__)
+                           : __data_[__pos];
+#endif
+  }
+
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY const_reference front() const {
+    return _LIBCPP_ASSERT(!empty(), __PRETTY_FUNCTION__ ": string is empty"),
+           __data_[0];
+  }
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY const_reference back() const {
+    return _LIBCPP_ASSERT(!empty(), __PRETTY_FUNCTION__ ": string is empty"),
+           __data_[__size_ - 1];
+  }
+
+  _LIBCPP_CONSTEXPR _LIBCPP_INLINE_VISIBILITY
+  const_pointer data() const _NOEXCEPT {
+    return __data_;
+  }
+
+  // [string.view.modifiers], modifiers
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  void clear() _NOEXCEPT {
+    __data_ = nullptr;
+    __size_ = 0;
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  void remove_prefix(size_type __n) _NOEXCEPT {
+    _LIBCPP_ASSERT(__n <= size(),
+                   __PRETTY_FUNCTION__ ": cannot remove more than size()");
+    __data_ = __data_ + __n;
+    __size_ = __size_ - __n;
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  void remove_suffix(size_type __n) _NOEXCEPT {
+    _LIBCPP_ASSERT(__n <= size(),
+                   __PRETTY_FUNCTION__ ": cannot remove more than size()");
+    __size_ = __size_ - __n;
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11
+  void swap(basic_string_view &__other) _NOEXCEPT {
+    const_pointer __p = __data_;
+    __data_ = __other.__data_;
+    __other.__data_ = __p;
+
+    size_type __sz = __size_;
+    __size_ = __other.__size_;
+    __other.__size_ = __sz;
+  }
+
+  // [string.view.ops], string operators
+  template <class _Allocator>
+  _LIBCPP_INLINE_VISIBILITY
+  _LIBCPP_EXPLICIT operator basic_string<value_type, traits_type,
+                                         _Allocator>() const {
+    return basic_string<value_type, traits_type, _Allocator>(begin(), end());
+  }
+
+  template <class _Allocator = allocator<_CharT>>
+  _LIBCPP_INLINE_VISIBILITY
+  basic_string<value_type, traits_type, _Allocator>
+  to_string(const _Allocator &__a = _Allocator()) {
+    return basic_string<value_type, traits_type, _Allocator>(begin(), end(),
+                                                             __a);
+  }
+
+  size_type copy(value_type *__s, size_type __n, size_type __pos = 0) const {
+#if defined(_LIBCPP_NO_EXCEPTIONS)
+#if __cplusplus >= 201305l
+    assert(__pos <= __size_ && "out of range");
+#endif
+#else
+    if (__pos > __size_)
+      throw out_of_range(__PRETTY_FUNCTION__);
+#endif
+    size_type __rlen = _VSTD::min(__n, __size_ - __pos);
+    _VSTD::copy(begin() + __pos, __rlen, __s);
+    return __rlen;
+  }
+
+  _LIBCPP_CONSTEXPR
+  basic_string_view substr(size_type __pos = 0, size_type __n = npos) const {
+#if defined(_LIBCPP_NO_EXCEPTIONS)
+#if __cplusplus >= 201305l
+    assert(__pos <= __size_ && "out of range");
+#endif
+    return basic_string_view(__data_ + __pos, _VSTD::min(__n, __size_ - __pos));
+#else
+    return __pos > __size_
+               ? throw out_of_range(__PRETTY_FUNCTION__)
+               : basic_string_view(__data_ + __pos,
+                                   _VSTD::min(__n, __size_ - __pos));
+#endif
+  }
+
+  _LIBCPP_CONSTEXPR_AFTER_CXX11
+  int compare(basic_string_view __sv) const _NOEXCEPT {
+    size_type __rlen = _VSTD::min(__size_, __sv.__size_);
+    int __retval = traits_type::compare(__data_, __sv.__data_, __rlen);
+    if (__retval == 0)
+      __retval = __size_ == __sv.__size_ ? 0 : (__size_ < __sv.__size_ ? -1 : 1);
+    return __retval;
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  int compare(size_type __pos, size_type __n, basic_string_view __sv) const {
+    return substr(__pos, __n).compare(__sv);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  int compare(size_type __pos, size_type __n, basic_string_view __sv,
+              size_type __sv_pos, size_type __sv_n) const {
+    return substr(__pos, __n).compare(__sv.substr(__sv_pos, __sv_n));
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  int compare(const_pointer __s) const {
+    return compare(basic_string_view(__s));
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  int compare(size_type __pos, size_type __n, const_pointer __s) const {
+    return substr(__pos, __n).compare(basic_string_view(__s));
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  int compare(size_type __pos, size_type __n, const_pointer __s,
+              size_type __len) const {
+    return substr(__pos, __n).compare(basic_string_view(__s, __len));
+  }
+
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find(basic_string_view __sv, size_type __pos = 0) const _NOEXCEPT {
+    _LIBCPP_ASSERT(__sv.__size_ == 0 || __sv.__data_,
+                   __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find<value_type, size_type, traits_type,
+                             npos>(data(), size(), __sv.data(), __pos,
+                                   __sv.size());
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find(value_type __c, size_type __pos = 0) const _NOEXCEPT {
+    return _VSTD::__str_find<value_type, size_type, traits_type, npos>(data(),
+                                                                       size(),
+                                                                       __c,
+                                                                       __pos);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find(const_pointer __s, size_type __pos, size_type __n) const {
+    _LIBCPP_ASSERT(__n == 0 || __s, __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find<value_type, size_type, traits_type, npos>(data(),
+                                                                       size(),
+                                                                       __s,
+                                                                       __pos,
+                                                                       __n);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find(const_pointer __s, size_type __pos = 0) const {
+    _LIBCPP_ASSERT(__s, __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find<value_type, size_type, traits_type,
+                             npos>(data(), size(), __s, __pos,
+                                   traits_type::length(__s));
+  }
+
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type rfind(basic_string_view __sv,
+                  size_type __pos = npos) const _NOEXCEPT {
+    _LIBCPP_ASSERT(__sv.__size_ == 0 || __sv.__data_,
+                   __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_rfind<value_type, size_type, traits_type,
+                              npos>(data(), size(), __sv.data(), __pos,
+                                    __sv.size());
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type rfind(value_type __c, size_type __pos = npos) const _NOEXCEPT {
+    return _VSTD::__str_rfind<value_type, size_type, traits_type, npos>(data(),
+                                                                        size(),
+                                                                        __c,
+                                                                        __pos);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type rfind(const_pointer __s, size_type __pos, size_type __n) const {
+    _LIBCPP_ASSERT(__n == 0 || __s, __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_rfind<value_type, size_type, traits_type, npos>(data(),
+                                                                        size(),
+                                                                        __s,
+                                                                        __pos,
+                                                                        __n);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type rfind(const_pointer __s, size_type __pos = npos) const {
+    _LIBCPP_ASSERT(__s, __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_rfind(data(), size(), __s, __pos,
+                              traits_type::length(__s));
+  }
+
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_first_of(basic_string_view __sv,
+                          size_type __pos = 0) const _NOEXCEPT {
+    _LIBCPP_ASSERT(__s.__size_ == 0 || __s.__data_,
+                   __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find_first_of<value_type, size_type, traits_type,
+                                      npos>(__data_, __size_, __sv.__data_,
+                                            __pos, __sv.__size_);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_first_of(value_type __c, size_type __pos = 0) const _NOEXCEPT {
+    return find(__c, __pos);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_first_of(const_pointer __s, size_type __pos,
+                          size_type __n) const {
+    _LIBCPP_ASSERT(__n == 0 || __s, __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find_first_of<value_type, size_type, traits_type,
+                                      npos>(__data_, __size_, __s, __pos, __n);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_first_of(const_pointer __s, size_type __pos = 0) const {
+    _LIBCPP_ASSERT(__s, __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find_first_of<value_type, size_type, traits_type,
+                                      npos>(__data_, __size_, __s, __pos,
+                                            traits_type::length(__s));
+  }
+
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_last_of(basic_string_view __sv,
+                         size_type __pos = npos) const _NOEXCEPT {
+    _LIBCPP_ASSERT(__sv.__size_ == 0 || __sv.__data_,
+                   __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find_last_of<value_type, size_type, traits_type,
+                                     npos>(__data_, __size_, __sv.__data_,
+                                           __pos, __sv.__size_);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_last_of(value_type __c,
+                         size_type __pos = npos) const _NOEXCEPT {
+    return rfind(__c, __pos);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_last_of(const_pointer __s, size_type __pos,
+                         size_type __n) const {
+    _LIBCPP_ASSERT(__n == 0 || __s, __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find_last_of<value_type, size_type, traits_type,
+                                     npos>(__data_, __size_, __s, __pos, __n);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_last_of(const_pointer __s, size_type __pos = npos) const {
+    _LIBCPP_ASSERT(__s, __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find_last_of<value_type, size_type, traits_type,
+                                     npos>(__data_, __size_, __s, __pos,
+                                           traits_type::length(__s));
+  }
+
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_first_not_of(basic_string_view __sv,
+                              size_type __pos = 0) const _NOEXCEPT {
+    _LIBCPP_ASSERT(__sv.__size_ == 0 || __sv.__data_,
+                   __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find_first_not_of<value_type, size_type, traits_type,
+                                          npos>(__data_, __size_, __sv.__data_,
+                                                __pos, __sv.__size_);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_first_not_of(value_type __c,
+                              size_type __pos = 0) const _NOEXCEPT {
+    return _VSTD::__str_find_first_not_of<value_type, size_type, traits_type,
+                                          npos>(__data_, __size_, __c, __pos);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_first_not_of(const_pointer __s, size_type __pos,
+                              size_type __n) const {
+    _LIBCPP_ASSERT(__n == 0 || __s, __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find_first_not_of<value_type, size_type, traits_type,
+                                          npos>(__data_, __size_, __s, __pos,
+                                                __n);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_first_not_of(const_pointer __s, size_type __pos = 0) const {
+    _LIBCPP_ASSERT(__s, __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find_first_not_of<value_type, size_type, traits_type,
+                                          npos>(__data_, __size_, __s, __pos,
+                                                traits_type::length(__s));
+  }
+
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_last_not_of(basic_string_view __sv,
+                             size_type __pos = npos) const _NOEXCEPT {
+    _LIBCPP_ASSERT(__sv.__size_ == 0 || __sv.__data_,
+                   __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find_last_not_of<value_type, size_type, traits_type,
+                                         npos>(__data_, __size_, __sv.__data_,
+                                               __pos, __sv.__size_);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_last_not_of(value_type __c,
+                             size_type __pos = npos) const _NOEXCEPT {
+    return _VSTD::__str_find_last_not_of<value_type, size_type, traits_type,
+                                         npos>(__data_, __size_, __c, __pos);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_last_not_of(const_pointer __s, size_type __pos,
+                             size_type __n) const {
+    _LIBCPP_ASSERT(__n == 0 || __s, __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find_last_not_of<value_type, size_type, traits_type,
+                                         npos>(__data_, __size_, __s, __pos,
+                                               __n);
+  }
+  _LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+  size_type find_last_not_of(const_pointer __s, size_type __pos = npos) const {
+    _LIBCPP_ASSERT(__s, __PRETTY_FUNCTION__ ": received nullptr");
+    return _VSTD::__str_find_last_not_of<value_type, size_type, traits_type,
+                                         npos>(__data_, __size_, __s, __pos,
+                                               traits_type::length(__s));
+  }
+
+private:
+  const value_type *__data_;
+  size_type __size_;
+};
+
+// [string.view.comparision]
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool operator==(basic_string_view<_CharT, _Traits> __lhs,
+                basic_string_view<_CharT, _Traits> __rhs) _NOEXCEPT {
+  if (__lhs.size() != __rhs.size())
+    return false;
+  return __lhs.compare(__rhs) == 0;
+}
+
+template <class _CharT, class _Traits> 
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool
+operator==(basic_string_view<_CharT, _Traits> __lhs,
+           typename _VSTD::common_type<basic_string_view<_CharT,
+                                                         _Traits>>::type __rhs)
+    _NOEXCEPT {
+  if (__lhs.size() != __rhs.size())
+    return false;
+  return __lhs.compare(__rhs) == 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool
+operator==(typename _VSTD::common_type<basic_string_view<_CharT,
+                                                          _Traits>>::type __lhs,
+           basic_string_view<_CharT, _Traits> __rhs) _NOEXCEPT {
+  if (__lhs.size() != __rhs.size())
+    return false;
+  return __lhs.compare(__rhs) == 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool operator!=(basic_string_view<_CharT, _Traits> __lhs,
+                basic_string_view<_CharT, _Traits> __rhs) _NOEXCEPT {
+  if (__lhs.size() != __rhs.size())
+    return true;
+  return __lhs.compare(__rhs) != 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool
+operator!=(basic_string_view<_CharT, _Traits> __lhs,
+           typename _VSTD::common_type<basic_string_view<_CharT,
+                                                         _Traits>>::type __rhs)
+    _NOEXCEPT {
+  if (__lhs.size() != __rhs.size())
+    return true;
+  return __lhs.compare(__rhs) != 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool
+operator!=(typename _VSTD::common_type<basic_string_view<_CharT,
+                                                         _Traits>>::type __lhs,
+           basic_string_view<_CharT, _Traits> __rhs) _NOEXCEPT {
+  if (__lhs.size() != __rhs.size())
+    return true;
+  return __lhs.compare(__rhs) != 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool operator<(basic_string_view<_CharT, _Traits> __lhs,
+               basic_string_view<_CharT, _Traits> __rhs) _NOEXCEPT {
+  return __lhs.compare(__rhs) < 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool
+operator<(basic_string_view<_CharT, _Traits> __lhs,
+          typename _VSTD::common_type<basic_string_view<_CharT,
+                                                        _Traits>>::type __rhs)
+    _NOEXCEPT {
+  return __lhs.compare(__rhs) < 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool
+operator<(typename _VSTD::common_type<basic_string_view<_CharT,
+                                                        _Traits>>::type __lhs,
+               basic_string_view<_CharT, _Traits> __rhs) _NOEXCEPT {
+  return __lhs.compare(__rhs) < 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool operator>(basic_string_view<_CharT, _Traits> __lhs,
+               basic_string_view<_CharT, _Traits> __rhs) _NOEXCEPT {
+  return __lhs.compare(__rhs) > 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool
+operator>(basic_string_view<_CharT, _Traits> __lhs,
+          typename _VSTD::common_type<basic_string_view<_CharT,
+                                                        _Traits>>::type __rhs)
+    _NOEXCEPT {
+  return __lhs.compare(__rhs) > 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool
+operator>(typename _VSTD::common_type<basic_string_view<_CharT,
+                                                        _Traits>>::type __lhs,
+          basic_string_view<_CharT, _Traits> __rhs) _NOEXCEPT {
+  return __lhs.compare(__rhs) > 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool operator<=(basic_string_view<_CharT, _Traits> __lhs,
+                basic_string_view<_CharT, _Traits> __rhs) _NOEXCEPT {
+  return __lhs.compare(__rhs) <= 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool
+operator<=(basic_string_view<_CharT, _Traits> __lhs,
+           typename _VSTD::common_type<basic_string_view<_CharT,
+                                                         _Traits>>::type __rhs)
+    _NOEXCEPT {
+  return __lhs.compare(__rhs) <= 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool
+operator<=(typename _VSTD::common_type<basic_string_view<_CharT,
+                                                         _Traits>>::type __lhs,
+                basic_string_view<_CharT, _Traits> __rhs) _NOEXCEPT {
+  return __lhs.compare(__rhs) <= 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool operator>=(basic_string_view<_CharT, _Traits> __lhs,
+                basic_string_view<_CharT, _Traits> __rhs) _NOEXCEPT {
+  return __lhs.compare(__rhs) >= 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool
+operator>=(basic_string_view<_CharT, _Traits> __lhs,
+           typename _VSTD::common_type<basic_string_view<_CharT,
+                                                         _Traits>>::type __rhs)
+    _NOEXCEPT {
+  return __lhs.compare(__rhs) >= 0;
+}
+
+template <class _CharT, class _Traits>
+_LIBCPP_CONSTEXPR_AFTER_CXX11 _LIBCPP_INLINE_VISIBILITY
+bool
+operator>=(typename _VSTD::common_type<basic_string_view<_CharT,
+                                                         _Traits>>::type __lhs,
+           basic_string_view<_CharT, _Traits> __rhs) _NOEXCEPT {
+  return __lhs.compare(__rhs) >= 0;
+}
+
+// [string.view.io]
+template <class _CharT, class _Traits>
+basic_ostream<_CharT, _Traits> &
+operator<<(basic_ostream<_CharT, _Traits> &__os,
+           basic_string_view<_CharT, _Traits> __sv) {
+  return _VSTD::__put_character_sequence(__os, __sv.data(), __sv.size());
+}
+
+typedef basic_string_view<char> string_view;
+typedef basic_string_view<wchar_t> wstring_view;
+typedef basic_string_view<char16_t> u16string_view;
+typedef basic_string_view<char32_t> u32string_view;
+}
+
+template <class _CharT, class _Traits>
+struct _LIBCPP_TYPE_VIS_ONLY
+hash<experimental::basic_string_view<_CharT, _Traits>>
+    : public unary_function<experimental::basic_string_view<_CharT,
+                                                            _Traits>, size_t> {
+  size_t operator()(const experimental::basic_string_view<_CharT,
+                                                          _Traits> &__val)
+      const _NOEXCEPT;
+};
+
+template <class _CharT, class _Traits>
+size_t hash<experimental::basic_string_view<_CharT, _Traits>>::
+operator()(const experimental::basic_string_view<_CharT, _Traits> &__val)
+    const _NOEXCEPT {
+  return __do_string_hash(__val.data(), __val.data() + __val.size());
+}
+
+#if _LIBCPP_STD_VER > 11
+template <class _CharT, class _Traits>
+__quoted_output_proxy<_CharT, const _CharT *, _Traits>
+quoted(experimental::basic_string_view<_CharT, _Traits> __sv,
+       _CharT __delim = _CharT('"'), _CharT __escape = _CharT('\\')) {
+  return __quoted_output_proxy<_CharT, const _CharT *,
+                               _Traits>(__sv.data(), __sv.data() + __sv.size(),
+                                        __delim, __escape);
+}
+#endif
+
+_LIBCPP_END_NAMESPACE_STD
+
+#endif
+
