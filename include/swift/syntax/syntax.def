@@ -1,0 +1,97 @@
+/**
+ * Copyright © 2014 Saleem Abdulrasool <compnerd@compnerd.org>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ **/
+
+NODE( 1, expression, statement)
+NODE( 2, declaration, statement)
+NODE( 3, loop_statement, statement)
+NODE( 4, branch_statement, statement)
+NODE( 5, labelled_statement, statement)
+NODE( 6, control_transfer_statement, statement)
+
+NODE( 7, prefix_unary_expression, expression)
+NODE( 8, in_out_expression, expression)
+NODE( 9, sequence_expression, expression)
+NODE(10, assignment_expression, expression)
+NODE(11, conditional_expression, expression)
+NODE(12, type_casting_expression, expression)
+NODE(13, declaration_reference_expression, expression)
+NODE(14, literal_expression, expression)
+NODE(15, self_expression, expression)
+NODE(16, superclass_expression, expression)
+NODE(17, closure_expression, expression)
+NODE(18, parenthesized_expression, expression)
+NODE(19, implicit_member_expression, expression)
+NODE(20, wildcard_expression, expression)
+NODE(21, postfix_unary_expression, expression)
+NODE(22, function_call_expression, expression)
+NODE(23, initializer_expression, expression)
+NODE(24, explicit_member_expression, expression)
+NODE(25, postfix_self_expression, expression)
+NODE(26, dynamic_type_expression, expression)
+NODE(27, subscript_expression, expression)
+NODE(28, forced_value_expresion, expression)
+NODE(29, optional_chaining_expression, expression)
+
+NODE(30, boolean_literal_expression, literal_expression)
+NODE(31, floating_point_literal_expression, literal_expression)
+NODE(32, integer_literal_expression, literal_expression)
+NODE(33, nil_literal_expression, literal_expression)
+NODE(34, string_literal_expression, literal_expression)
+NODE(35, array_literal_expression, literal_expression)
+NODE(36, dictionary_literal_expression, literal_expression)
+NODE(37, magic_literal_expression, literal_expression)
+
+NODE(38, import_declaration, declaration)
+NODE(39, constant_declaration, declaration)
+NODE(40, variable_declaration, declaration)
+NODE(41, typealias_declaration, declaration)
+NODE(42, function_declaration, declaration)
+NODE(43, enum_declaration, declaration)
+NODE(44, struct_declaration, declaration)
+NODE(45, class_declaration, declaration)
+NODE(46, protocol_declaration, declaration)
+NODE(47, initializer_declaration, declaration)
+NODE(48, deinitializer_declaration, declaration)
+NODE(49, extension_declaration, declaration)
+NODE(50, subscript_declaration, declaration)
+NODE(51, operator_declaration, declaration)
+
+NODE(52, for_statement, loop_statement)
+NODE(53, for_in_statement, loop_statement)
+NODE(54, while_statement, loop_statement)
+NODE(55, do_while_statement, loop_statement)
+
+NODE(56, if_statement, branch_statement)
+NODE(57, switch_statement, branch_statement)
+
+NODE(58, break_statement, control_transfer_statement)
+NODE(59, continue_statement, control_transfer_statement)
+NODE(60, fallthrough_statement, control_transfer_statement)
+NODE(61, return_statement, control_transfer_statement)
+
