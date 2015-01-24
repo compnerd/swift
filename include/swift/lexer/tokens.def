@@ -1,0 +1,153 @@
+/**
+ * Copyright © 2014 Saleem Abdulrasool <compnerd@compnerd.org>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+ * EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ **/
+
+#if !defined(TOKEN)
+#define TOKEN(token)
+#endif
+#if !defined(KEYWORD)
+#define KEYWORD(spelling) TOKEN(kw_ ## spelling)
+#endif
+
+TOKEN(invalid)
+
+TOKEN(eof)
+TOKEN(whitespace)
+
+TOKEN(comment)
+TOKEN(identifier)
+TOKEN(literal)
+TOKEN(op)
+
+TOKEN(equal)    // =
+TOKEN(exclaim)  // !
+TOKEN(amp)      // &
+
+TOKEN(l_brace)   // {
+TOKEN(r_brace)   // }
+TOKEN(l_paren)   // (
+TOKEN(r_paren)   // )
+TOKEN(l_square)  // [
+TOKEN(r_square)  // ]
+
+TOKEN(at)        // @
+TOKEN(colon)     // :
+TOKEN(comma)     // ,
+TOKEN(hash)      // #
+TOKEN(period)    // .
+TOKEN(question)  // ?
+TOKEN(semi)      // ;
+TOKEN(underscore)
+TOKEN(arrow)     // ->
+
+KEYWORD(as)                 // as (expression, type)
+KEYWORD(associativity)      // associativity (context sensitive)
+KEYWORD(break)              // break (statement)
+KEYWORD(case)               // case (statement)
+KEYWORD(class)              // class (declaration)
+KEYWORD(continue)           // continue (statement)
+KEYWORD(convenience)        // convenience (context sensitive)
+KEYWORD(default)            // default (statement)
+KEYWORD(defer)              // defer (statement)
+KEYWORD(deinit)             // deinit (declaration)
+KEYWORD(didSet)             // didSet (context sensitive)
+KEYWORD(do)                 // do (statement)
+KEYWORD(dynamic)            // dynamic (context sensitive)
+KEYWORD(dynamicType)        // dynamicType (expression, type)
+KEYWORD(else)               // else (statement)
+KEYWORD(enum)               // enum (declaration)
+KEYWORD(extension)          // extension (declaration)
+KEYWORD(fallthrough)        // fallthrough (statement)
+KEYWORD(final)              // final (context sensitive)
+KEYWORD(for)                // for (statement)
+KEYWORD(func)               // func (declaration)
+KEYWORD(get)                // get (context sensitive)
+KEYWORD(guard)              // guard (statement)
+KEYWORD(if)                 // if (statement)
+KEYWORD(import)             // import (declaration)
+KEYWORD(in)                 // in (statement)
+KEYWORD(infix)              // infix (context sensitive)
+KEYWORD(init)               // init (declaration)
+KEYWORD(inout)              // inout (context sensitive)
+KEYWORD(internal)           // internal (declaration)
+KEYWORD(is)                 // is (expression, type)
+KEYWORD(lazy)               // lazy (context sensitive)
+KEYWORD(left)               // left (context sensitive)
+KEYWORD(let)                // let (declaration)
+KEYWORD(mutating)           // mutating (context sensitive)
+KEYWORD(none)               // none (context sensitive)
+KEYWORD(nonmutating)        // nonmutating (context sensitive)
+KEYWORD(operator)           // operator (declaration)
+KEYWORD(optional)           // optional (context sensitive)
+KEYWORD(override)           // override (context sensitive)
+KEYWORD(postfix)            // postfix (context sensitive)
+KEYWORD(precedence)         // precedence (context sensitive)
+KEYWORD(prefix)             // prefix (context sensitive)
+KEYWORD(private)            // private (declaration)
+KEYWORD(protocol)           // protocol (declaration)
+KEYWORD(public)             // public (declaration)
+KEYWORD(required)           // required (context sensitive)
+KEYWORD(repeat)             // repeat (statement)
+KEYWORD(rethrows)           // rethrows (statement)
+KEYWORD(return)             // return (statement)
+KEYWORD(right)              // right (context sensitive)
+KEYWORD(self)               // self (expression, type)
+KEYWORD(set)                // set (context sensitive)
+KEYWORD(static)             // static (declaration)
+KEYWORD(struct)             // struct (declaration)
+KEYWORD(subscript)          // subscript (declaration)
+KEYWORD(super)              // super (expression, type)
+KEYWORD(switch)             // switch (statement)
+KEYWORD(try)                // try (expression)
+KEYWORD(typealias)          // typealias (declaration)
+KEYWORD(unowned)            // unowned (context sensitive)
+KEYWORD(var)                // var (declaration)
+KEYWORD(weak)               // weak (context sensitive)
+KEYWORD(where)              // where (statement)
+KEYWORD(while)              // while (statement)
+KEYWORD(willSet)            // willSet (context sensitive)
+
+KEYWORD(Protocol)           // Protocol (context sensitive)
+KEYWORD(Self)               // Self (expression, type)
+KEYWORD(Type)               // Type (context sensitive)
+
+KEYWORD(__COLUMN__)         // __COLUMN__ (expression, type)
+KEYWORD(__FILE__)           // __FILE__ (expression, type)
+KEYWORD(__FUNCTION__)       // __FUNCTION__ (expression, type)
+KEYWORD(__LINE__)           // __LINE__ (expression, type)
+
+TOKEN(pp_available)         // #available (build configuration)
+TOKEN(pp_if)                // #if (build configuration)
+TOKEN(pp_else)              // #else (build configuration)
+TOKEN(pp_elseif)            // #elseif (build configuration)
+TOKEN(pp_endif)             // #endif (build configuration)
+TOKEN(pp_line)              // #line (build configuration)
+
+#undef KEYWORD
+#undef TOKEN
+
