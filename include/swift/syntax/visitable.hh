@@ -27,53 +27,15 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **/
 
-#ifndef swift_syntax_type_hh
-#define swift_syntax_type_hh
+#ifndef swift_syntax_visitable_hh
+#define swift_syntax_visitable_hh
 
-#include "swift/support/error-handling.hh"
-#include "swift/syntax/visitable.hh"
-
-#include <cstdlib>
+#include "swift/support/visitor.hh"
 
 namespace swift {
 namespace ast {
-class context;
-
-class type : public ast::visitable<type> {
-public:
-  enum class kind {
-    array,
-    composite,
-    dictionary,
-    function,
-    identifier,
-    inout,
-    metatype,
-    tuple,
-  };
-
-  void *operator new(size_t size, const ast::context &context,
-                     unsigned alignment = 8);
-
-  virtual void dump() const = 0;
-
-  kind kind() const {
-    return kind_;
-  }
-
-protected:
-  type(enum kind kind) : kind_(kind) {}
-
-  void *operator new(size_t) noexcept {
-    swift_unreachable("type identifier cannot be allocated with 'new'");
-  }
-  void operator delete(void *) noexcept {
-    swift_unreachable("type identifier cannot be unallocated with 'delete'");
-  }
-
-private:
-  enum kind kind_;
-};
+template <typename VisitableType, typename ReturnType = void>
+class visitable : public ::visitable<VisitableType, ReturnType> {};
 }
 }
 

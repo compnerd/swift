@@ -31,6 +31,7 @@
 #define swift_syntax_statement_hh
 
 #include "swift/support/error-handling.hh"
+#include "swift/syntax/visitable.hh"
 
 #include <cstdlib>
 

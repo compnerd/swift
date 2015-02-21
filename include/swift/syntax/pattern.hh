@@ -31,13 +31,14 @@
 #define swift_syntax_pattern_hh
 
 #include "swift/support/error-handling.hh"
+#include "swift/syntax/visitable.hh"
 
 #include <ext/string_view>
 
 namespace swift::ast {
 class context;
 
-class pattern {
+class pattern : public ast::visitable<pattern> {
 public:
   enum class type {
     any,
